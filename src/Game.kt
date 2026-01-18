@@ -74,8 +74,8 @@ class Game(
 
         println("MAX POSSIBLE SCORES:")
         println(Constants.GREEN + " 70 - EASY (ALL CARDS)" + Constants.RESET)
-        println(Constants.YELLOW + " 61 - MEDIUM (NO RED ROYAL FAMILY)" + Constants.RESET)
-        println(Constants.RED + " 54 - HARD (ONLY RED NUMBERS)" + Constants.RESET)
+        println(Constants.YELLOW + " 61 - MEDIUM (NO RED FACES)" + Constants.RESET)
+        println(Constants.RED + " 54 - HARD (RED HAS ONLY NUMBERS)" + Constants.RESET)
 
         println("PERFORMANCE: " + (100*(this.player.score+208)/(this.maxScore+208)) + "%")
     }
