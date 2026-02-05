@@ -7,7 +7,7 @@ import utils.Constants
 
 class Game(
     val gamemode : Char,
-    val agentType: String = "Human"
+    agentType: String = "Human"
 )
 {
     val playerIsHuman: Boolean = (agentType == "Human")
