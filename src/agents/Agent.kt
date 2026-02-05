@@ -1,12 +1,18 @@
-class Player()
-{
+package agents
+
+import models.Card
+
+abstract class Agent {
     var hp: Int = 20
     var drunk: Boolean = false
     var score: Int = -208
     var weapon: Int = 0
     var durability: Int = 0
 
-    fun interact(cards: MutableList<Card>, choice: Int): MutableList<Card>{
+    abstract fun chooseCard(cards: MutableList<Card>): Int
+    abstract fun chooseSkip(cards: MutableList<Card>): Boolean
+
+    open fun interact(cards: MutableList<Card>, choice: Int): MutableList<Card>{
         val choosenCard = cards[choice-1]
 
         when(choosenCard.suit){
@@ -21,7 +27,7 @@ class Player()
             }
             "♦" -> { // weapon
                 this.weapon = choosenCard.rank
-                this.durability = 14
+                this.durability = 15
             }
 
             else -> { // monster

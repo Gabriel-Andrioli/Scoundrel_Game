@@ -1,3 +1,7 @@
+package models
+
+import utils.Constants
+
 class Card(
     val suit: String,
     val rank: Int

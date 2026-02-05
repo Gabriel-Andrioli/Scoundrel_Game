@@ -1,9 +1,21 @@
+import agents.Agent
+import agents.RandomAgent
+import models.Card
+import models.Deck
+import agents.Player
+import utils.Constants
+
 class Game(
-    val gamemode : Char
+    val gamemode : Char,
+    val agentType: String = "Human"
 )
 {
+    val playerIsHuman: Boolean = (agentType == "Human")
     val deck: Deck = Deck(gamemode)
-    val player: Player = Player()
+    val player: Agent = when(agentType){
+        "Random" -> RandomAgent()
+        else -> Player()
+    }
     var room: Int = 1
     var dealed: MutableList<Card> = this.deck.dealUpToN(4)
     var maxScore: Int = when(gamemode) {
@@ -12,7 +24,7 @@ class Game(
         else -> 20 + 10 + 9 + 8 + 7
     }
 
-    fun printStatus(){
+    fun printStatus(){ // for humans
         println("\nHP: " + this.player.hp.toString())
         var weapon: String
         var durability: String
@@ -42,7 +54,7 @@ class Game(
     fun skipRoom(){
         this.deck.returnToBottom(this.dealed)
         this.dealed = this.deck.dealUpToN(4)
-        printRoom()
+        if(playerIsHuman) printRoom()
     }
 
     fun calculateFinalScore(){
@@ -77,11 +89,15 @@ class Game(
         println(Constants.YELLOW + " 61 - MEDIUM (NO RED ROYAL FAMILY)" + Constants.RESET)
         println(Constants.RED + " 54 - HARD (ONLY RED NUMBERS)" + Constants.RESET)
 
-        println("PERFORMANCE: " + (100*(this.player.score+208)/(this.maxScore+208)) + "%")
+        val performance = (100*(this.player.score+208)/(this.maxScore+208))
+        println("PERFORMANCE: $performance%")
+
+        if (player is RandomAgent)
+            println("SEED: " + Constants.GREEN + player.seed + Constants.RESET)
     }
 
     fun playRun() {
-        var skipRoom: Char
+        var skipRoom = false
         var choice: Int
         
         while((this.player.hp > 0) and (this.player.score < 0)){
@@ -90,18 +106,15 @@ class Game(
                 this.room++
                 this.player.drunk = false
             }
-            printRoom()
+            if(playerIsHuman) printRoom()
 
-            skipRoom = 'n'
-            if(this.dealed.size==4) {
-                print("Skip room? (y/n): ")
-                skipRoom = readln().single()
-            }
-            if(skipRoom == 'y')
-                skipRoom()
+            if(this.dealed.size==4)
+                skipRoom = player.chooseSkip(this.dealed)
 
-            print("Choose a card (1-${this.dealed.size}): ")
-            choice = readln().toInt()
+            if(skipRoom) skipRoom()
+            skipRoom = false
+
+            choice = player.chooseCard(this.dealed)
             this.dealed = this.player.interact(this.dealed,choice=choice)
         }
 
