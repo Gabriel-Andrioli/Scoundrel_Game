@@ -93,7 +93,7 @@ class Game(
         println("PERFORMANCE: $performance%")
 
         if (player is RandomAgent)
-            println("SEED: " + Constants.GREEN + player.seed + Constants.RESET)
+            println("SEED: " + Constants.GREEN + Constants.SEED + Constants.RESET)
     }
 
     fun playRun() {

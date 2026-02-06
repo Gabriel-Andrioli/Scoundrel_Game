@@ -1,5 +1,8 @@
 package models
 
+import utils.Constants
+import kotlin.random.Random
+
 class Deck(
     val gamemode: Char
 )
@@ -31,7 +34,7 @@ class Deck(
                 if (suit + rank.toString() !in gamemodeList)
                 cards.add(Card(suit, rank))
 
-        this.cards.shuffle()
+        this.cards.shuffle(Constants.RNG)
         this.size = this.cards.size
     }
 
