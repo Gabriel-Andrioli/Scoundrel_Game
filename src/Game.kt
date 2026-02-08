@@ -4,6 +4,8 @@ import models.Card
 import models.Deck
 import agents.Player
 import utils.Constants
+import utils.RandObj
+import kotlin.random.Random
 
 class Game(
     val gamemode : Char,
@@ -93,12 +95,14 @@ class Game(
         println("PERFORMANCE: $performance%")
 
         if (player is RandomAgent)
-            println("SEED: " + Constants.GREEN + Constants.SEED + Constants.RESET)
+            println("SEED: " + Constants.GREEN + RandObj.seed + Constants.RESET)
     }
 
-    fun playRun() {
+    fun playRun(seed: Long? = null) {
         var skipRoom = false
         var choice: Int
+
+        RandObj.init(seed)
         
         while((this.player.hp > 0) and (this.player.score < 0)){
             if(this.dealed.size==1){

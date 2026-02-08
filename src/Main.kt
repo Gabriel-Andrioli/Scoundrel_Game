@@ -5,14 +5,12 @@ fun main() {
 //    val gamemode = readLine()?.single()
 //    val n=1
 
-    Constants.SEED = 2103
-    TODO("FIX SEEDED RUN")
     val gamemode = 'e'
     val n = 200
 
     if (gamemode != null) {
         repeat(n) {
-            Game(gamemode, "Random").playRun()
+            Game(gamemode, "Random").playRun(21032005)
         }
     } else {
         println("Invalid gamemode")
