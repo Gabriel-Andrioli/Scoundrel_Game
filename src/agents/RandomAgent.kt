@@ -1,12 +1,11 @@
 package agents
 
 import models.Card
-import utils.Constants
-import kotlin.random.Random
+import utils.RandObj
 
 /**
  * An agent that makes decisions based on pure randomness.
- * * ### Performance Metrics (n=200) (Easy mode)
+ * ### Performance Metrics (n=200) (Easy mode)
  * | Metric | Value |
  * | :--- | :--- |
  * | **Mean Performance** | 16.43% |
@@ -18,10 +17,10 @@ class RandomAgent() : Agent() {
 
     override fun chooseCard(cards: MutableList<Card>): Int {
         val n = cards.size
-        return Constants.RNG.nextInt(1, n+1)
+        return RandObj.nextInt(n) + 1
     }
 
     override fun chooseSkip(cards: MutableList<Card>): Boolean {
-        return Constants.RNG.nextDouble() < 0.2
+        return RandObj.nextDouble() < 0.2
     }
 }

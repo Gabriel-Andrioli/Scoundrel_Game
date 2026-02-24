@@ -1,20 +1,19 @@
 import utils.Constants
+import utils.RandObj
 
 fun main() {
 //    print("Choose gamemode (e/m/h): ")
 //    val gamemode = readLine()?.single()
 //    val n=1
 
-    Constants.SEED = 2103
-    TODO("FIX SEEDED RUN")
-    val gamemode = 'e'
     val n = 200
+    RandObj.init()
 
-    if (gamemode != null) {
-        repeat(n) {
-            Game(gamemode, "Random").playRun()
-        }
-    } else {
-        println("Invalid gamemode")
+    repeat(n) {
+        Game(
+            'e',
+            "Random",
+            RandObj.nextSeed()
+        ).playRun()
     }
 }

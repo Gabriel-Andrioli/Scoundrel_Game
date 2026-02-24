@@ -10,7 +10,4 @@ object Constants {
     const val BLUE = "\u001b[34m"
 
     const val RESET = "\u001b[0m"
-
-    var SEED: Long = 21032005
-    var RNG: Random = if(SEED.toInt() == 21032005) Random.Default else Random(SEED)
 }

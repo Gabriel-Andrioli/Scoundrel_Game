@@ -6,7 +6,6 @@ import kotlin.math.max
 
 class Functions {
     companion object {
-
         data class RoomAnalysis(
             val totalEnemies: Int,
             val maxEnemy: Int,

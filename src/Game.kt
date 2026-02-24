@@ -4,18 +4,28 @@ import models.Card
 import models.Deck
 import agents.Player
 import utils.Constants
+import utils.RandObj
 
 class Game(
     val gamemode : Char,
-    agentType: String = "Human"
+    agentType: String = "Human",
+    seed: Long? = null
 )
 {
+    init {
+        if(seed!=null)
+            RandObj.init(seed)
+        else
+            RandObj.init()
+    }
+
     val playerIsHuman: Boolean = (agentType == "Human")
     val deck: Deck = Deck(gamemode)
     val player: Agent = when(agentType){
         "Random" -> RandomAgent()
         else -> Player()
     }
+
     var room: Int = 1
     var dealed: MutableList<Card> = this.deck.dealUpToN(4)
     var maxScore: Int = when(gamemode) {
@@ -93,7 +103,7 @@ class Game(
         println("PERFORMANCE: $performance%")
 
         if (player is RandomAgent)
-            println("SEED: " + Constants.GREEN + Constants.SEED + Constants.RESET)
+            println("SEED: " + Constants.GREEN + RandObj.seed + Constants.RESET)
     }
 
     fun playRun() {
