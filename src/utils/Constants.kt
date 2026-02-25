@@ -9,5 +9,10 @@ object Constants {
     const val YELLOW = "\u001b[33m"
     const val BLUE = "\u001b[34m"
 
+    const val HEARTHS = "♥"
+    const val DIAMONDS = "♦"
+    const val CLUBS = "♣"
+    const val SPADES = "♠"
+
     const val RESET = "\u001b[0m"
 }

@@ -1,14 +1,17 @@
 import agents.Agent
+import agents.GreedyAgent
 import agents.RandomAgent
 import models.Card
 import models.Deck
 import agents.Player
 import utils.Constants
 import utils.RandObj
+import java.io.File
+import java.io.FileWriter
 
 class Game(
     val gamemode : Char,
-    agentType: String = "Human",
+    val agentType: String = "human",
     seed: Long? = null
 )
 {
@@ -21,8 +24,10 @@ class Game(
 
     val playerIsHuman: Boolean = (agentType == "Human")
     val deck: Deck = Deck(gamemode)
+
     val player: Agent = when(agentType){
-        "Random" -> RandomAgent()
+        "random" -> RandomAgent()
+        "greedy" -> GreedyAgent()
         else -> Player()
     }
 
@@ -75,6 +80,28 @@ class Game(
         }
     }
 
+    fun saveMetricsToCSV(metrics: Array<String>) {
+        val path = "data/${metrics[0]}_agent_metrics.csv"
+        val file = File(path)
+
+        file.parentFile?.mkdirs()
+
+        if (!file.exists()) {
+            file.writeText(
+                "agentType," +
+                        "gamemode," +
+                        "score," +
+                        "deepestRoom," +
+                        "finalHP," +
+                        "performance," +
+                        "seed\n")
+        }
+
+        val csvLine = metrics.joinToString(separator = ",")
+
+        file.appendText(csvLine + "\n")
+    }
+
     fun printGameOver(){
         println("\n".repeat(3))
         println("-----GAME OVER-----")
@@ -104,6 +131,18 @@ class Game(
 
         if (player is RandomAgent)
             println("SEED: " + Constants.GREEN + RandObj.seed + Constants.RESET)
+
+        saveMetricsToCSV(
+            arrayOf(
+                this.agentType,
+                this.gamemode.toString(),
+                (this.player.score).toString(),
+                this.room.toString(),
+                this.player.hp.toString(),
+                performance.toString(),
+                RandObj.seed.toString()
+            )
+        )
     }
 
     fun playRun(seed: Long? = null) {

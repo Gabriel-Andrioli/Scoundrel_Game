@@ -1,6 +1,7 @@
 package agents
 
 import models.Card
+import models.Choice
 import utils.RandObj
 
 /**
@@ -16,8 +17,16 @@ import utils.RandObj
 class RandomAgent() : Agent() {
 
     override fun chooseCard(cards: MutableList<Card>): Int {
-        val n = cards.size
-        return RandObj.nextInt(n) + 1
+        if (cards.size == 4) {
+            Choice.setChoices(
+                mutableListOf(
+                    RandObj.nextInt(4) + 1,
+                    RandObj.nextInt(3) + 1,
+                    RandObj.nextInt(2) + 1
+                )
+            )
+        }
+        return Choice.popFirst()
     }
 
     override fun chooseSkip(cards: MutableList<Card>): Boolean {

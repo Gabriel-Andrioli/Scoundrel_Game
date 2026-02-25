@@ -6,13 +6,13 @@ fun main() {
 //    val gamemode = readLine()?.single()
 //    val n=1
 
-    val n = 200
+    val n = 50
     RandObj.init()
 
     repeat(n) {
         Game(
             'e',
-            "Random",
+            "random",
             RandObj.nextSeed()
         ).playRun()
     }
