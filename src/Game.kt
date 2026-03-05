@@ -7,7 +7,6 @@ import agents.Player
 import utils.Constants
 import utils.RandObj
 import java.io.File
-import java.io.FileWriter
 
 class Game(
     val gamemode : Char,
@@ -22,7 +21,7 @@ class Game(
             RandObj.init()
     }
 
-    val playerIsHuman: Boolean = (agentType == "Human")
+    val playerIsHuman: Boolean = (agentType == "greedy")
     val deck: Deck = Deck(gamemode)
 
     val player: Agent = when(agentType){
@@ -145,11 +144,9 @@ class Game(
         )
     }
 
-    fun playRun(seed: Long? = null) {
+    fun playRun() {
         var skipRoom = false
         var choice: Int
-
-        RandObj.init(seed)
         
         while((this.player.hp > 0) and (this.player.score < 0)){
             if(this.dealed.size==1){
@@ -165,7 +162,7 @@ class Game(
             if(skipRoom) skipRoom()
             skipRoom = false
 
-            choice = player.chooseCard(this.dealed)
+            choice = player.chooseCard(this.dealed,this.deck.cards.size)
             this.dealed = this.player.interact(this.dealed,choice=choice)
         }
 

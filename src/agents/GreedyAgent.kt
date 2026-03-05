@@ -1,6 +1,8 @@
 package agents
 
 import models.Card
+import utils.Constants
+import utils.Functions
 
 /**
  * An agent that makes decisions based on greedy instant decisions.
@@ -18,16 +20,28 @@ class GreedyAgent : Agent() {
     private val plannedCards = mutableListOf<Card>()
 
     override fun chooseSkip(cards: MutableList<Card>): Boolean {
-        val monsters = cards.filter { it.suit == "♣" || it.suit == "♠" }
+        val monsters = cards.filter { it.suit == Constants.CLUBS || it.suit == Constants.SPADES }
         if (monsters.isEmpty()) return false
 
-        val totalDamage = monsters.sumOf { monster ->
-            val canUseWeapon = weapon > 0 && monster.rank < durability
-            if (canUseWeapon) maxOf(0, monster.rank - weapon)
-            else monster.rank
+        // Calculate real damage considering weapon and decreasing durability
+        var simDurability = this.durability
+        val sortedMonsters = monsters.sortedByDescending { it.rank }
+        val realDamage = sortedMonsters.sumOf { monster ->
+            val dmg = if (weapon > 0 && monster.rank < simDurability)
+                maxOf(0, monster.rank - weapon)
+            else
+                monster.rank
+            simDurability = if (weapon > 0 && monster.rank < simDurability) monster.rank else simDurability
+            dmg
         }
 
-        return totalDamage > this.hp * 0.6
+        // Factor in potions: they can recover HP
+        val potionValue = if (!drunk)
+            cards.filter { it.suit == Constants.HEARTS }.maxOfOrNull { it.rank } ?: 0
+        else 0
+
+        val netDamage = realDamage - potionValue
+        return netDamage > hp * 0.5
     }
 
     override fun chooseCard(cards: MutableList<Card>, remainingCards: Int): Int {
@@ -35,7 +49,7 @@ class GreedyAgent : Agent() {
             plannedCards.clear()
 
             val available = cards.toMutableList()
-            val skip = remainingCards != 0  // cannot pick first card
+            val skip = remainingCards != 0
             val indices = if (skip) (1 until available.size).toMutableList()
             else (0 until available.size).toMutableList()
 
@@ -51,51 +65,108 @@ class GreedyAgent : Agent() {
         val remaining = indices.toMutableList()
         val order = mutableListOf<Card>()
 
-        // 1. Best weapon if better than current
+        var simWeapon = this.weapon
+        var simDurability = this.durability
+        var simDrunk = this.drunk
+        var simHp = this.hp
+
+        // 1. Best weapon — only upgrade if new weapon is stronger AND
+        // current weapon is exhausted/absent or new weapon exceeds current durability cap
         val bestWeaponIdx = remaining
-            .filter { cards[it].suit == "♦" && cards[it].rank > this.weapon }
+            .filter { cards[it].suit == Constants.DIAMONDS }
+            .filter { cards[it].rank > simWeapon }
+            .filter { simWeapon == 0 || cards[it].rank > simDurability }
             .maxByOrNull { cards[it].rank }
         if (bestWeaponIdx != null) {
             order.add(cards[bestWeaponIdx])
             remaining.remove(bestWeaponIdx)
+            simWeapon = cards[bestWeaponIdx].rank
+            simDurability = 15
         }
 
-        val weaponAfterPickup = if (bestWeaponIdx != null) cards[bestWeaponIdx].rank else this.weapon
-        val durabilityAfterPickup = if (bestWeaponIdx != null) 15 else this.durability
-
-        // 2. Monsters with weapon, strongest first
-        val monstersWithWeapon = remaining
+        // 2. Collect monsters with weapon (strongest first) and bare monsters (weakest first)
+        val weaponMonsters = remaining
             .filter {
                 val c = cards[it]
-                (c.suit == "♣" || c.suit == "♠") &&
-                        weaponAfterPickup > 0 &&
-                        c.rank < durabilityAfterPickup
+                (c.suit == Constants.CLUBS || c.suit == Constants.SPADES) &&
+                        simWeapon > 0 && c.rank < simDurability
             }
             .sortedByDescending { cards[it].rank }
 
-        monstersWithWeapon.forEach { order.add(cards[it]) }
-        remaining.removeAll(monstersWithWeapon.toSet())
-
-        // 3. Potion if not drunk and HP not full
-        if (!this.drunk && this.hp < 20) {
-            val potionIdx = remaining
-                .filter { cards[it].suit == "♥" }
-                .maxByOrNull { cards[it].rank }
-            if (potionIdx != null) {
-                order.add(cards[potionIdx])
-                remaining.remove(potionIdx)
-            }
-        }
-
-        // 4. Remaining monsters weakest first
         val bareMonsters = remaining
-            .filter { cards[it].suit == "♣" || cards[it].suit == "♠" }
+            .filter {
+                val c = cards[it]
+                (c.suit == Constants.CLUBS || c.suit == Constants.SPADES) &&
+                        !(simWeapon > 0 && c.rank < simDurability)
+            }
             .sortedBy { cards[it].rank }
 
-        bareMonsters.forEach { order.add(cards[it]) }
-        remaining.removeAll(bareMonsters.toSet())
+        val potionIdx = if (!simDrunk)
+            remaining.filter { cards[it].suit == Constants.HEARTS }.maxByOrNull { cards[it].rank }
+        else null
 
-        // 5. Whatever's left
+        // Simulate damage from all monsters to find optimal potion placement
+        if (potionIdx != null) {
+            var tempHp = simHp
+            var tempDurability = simDurability
+            val monsterSequence = weaponMonsters + bareMonsters
+
+            // Find where HP would drop low enough to warrant early healing
+            var insertPotionBefore: Int? = null  // index in monsterSequence
+            for (i in monsterSequence.indices) {
+                val m = cards[monsterSequence[i]]
+                val dmg = if (simWeapon > 0 && m.rank < tempDurability)
+                    maxOf(0, m.rank - simWeapon)
+                else m.rank
+                tempDurability = if (simWeapon > 0 && m.rank < tempDurability) m.rank else tempDurability
+
+                if (tempHp - dmg <= 0) {
+                    // Would die — insert potion before this monster
+                    insertPotionBefore = i
+                    break
+                }
+                tempHp -= dmg
+            }
+
+            val potionCard = cards[potionIdx]
+            val potionHeal = potionCard.rank
+
+            if (insertPotionBefore != null) {
+                // Use potion before the lethal monster
+                for (i in monsterSequence.indices) {
+                    if (i == insertPotionBefore) {
+                        if (simHp < 20) { order.add(potionCard); simDrunk = true }
+                    }
+                    order.add(cards[monsterSequence[i]])
+                }
+            } else {
+                // Safe to take all damage first — use potion last to maximize healing
+                val hpAfterAll = tempHp
+                if (hpAfterAll < 20) {
+                    // Potion has value — use after all monsters
+                    monsterSequence.forEach { order.add(cards[it]) }
+                    order.add(potionCard)
+                    simDrunk = true
+                } else {
+                    // HP still full after all damage — potion wasted, skip it
+                    monsterSequence.forEach { order.add(cards[it]) }
+                }
+            }
+
+            remaining.remove(potionIdx)
+            remaining.removeAll(weaponMonsters.toSet())
+            remaining.removeAll(bareMonsters.toSet())
+        } else {
+            // No potion — just add monsters in order
+            for (idx in weaponMonsters) {
+                order.add(cards[idx])
+                remaining.remove(idx)
+            }
+            bareMonsters.forEach { order.add(cards[it]) }
+            remaining.removeAll(bareMonsters.toSet())
+        }
+
+        // 5. Whatever's left (useless potions, inferior weapons, etc.)
         remaining.forEach { order.add(cards[it]) }
 
         return order
