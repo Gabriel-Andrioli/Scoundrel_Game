@@ -1,62 +1,103 @@
 package agents
 
 import models.Card
-import models.Choice
-import utils.Functions
-import utils.Constants
-import utils.RandObj
-import kotlin.math.max
 
-class GreedyAgent() : Agent() {
+/**
+ * An agent that makes decisions based on greedy instant decisions.
+ * ### Performance Metrics (n=30000) (Easy mode)
+ * | Metric | Value |
+ * | :--- | :--- |
+ * | **Mean Score** | -117.62 |
+ * | **Mean Deepest Room** | 8.55 |
+ * | **Mean Performance** | 32.02% |
+ */
 
-    override fun chooseCard(cards: MutableList<Card>): Int {
-        if (cards.size == 4) {
-            val indices = mutableListOf(0, 1, 2, 3)
-            val prioritized = indices.sortedByDescending { i ->
-                val card = cards[i]
-                when (card.suit) {
-                    Constants.DIAMONDS -> 100 + card.rank
-                    Constants.HEARTHS -> 80 + card.rank
-                    else -> 10 - card.rank
-                }
-            }
 
-            val firstChoice = prioritized[0]
-            val secondChoice = prioritized[1]
-            val thirdChoice = prioritized[2]
+class GreedyAgent : Agent() {
 
-            val firstIndex = firstChoice + 1
-
-            val secondIndex = if (secondChoice > firstChoice) secondChoice else secondChoice + 1
-
-            val thirdIndex = prioritized.subList(0, 2).let { previous ->
-                var count = 0
-                for (i in 0 until thirdChoice) {
-                    if (previous.contains(i)) count++
-                }
-                (thirdChoice - count) + 1
-            }
-
-            Choice.setChoices(
-                mutableListOf(
-                    firstIndex,
-                    secondIndex,
-                    thirdIndex
-                )
-            )
-        }
-        return Choice.popFirst()
-    }
+    private val plannedCards = mutableListOf<Card>()
 
     override fun chooseSkip(cards: MutableList<Card>): Boolean {
-        val monsterTotal = cards.filter { it.suit == Constants.SPADES || it.suit == Constants.CLUBS }
-            .sumOf { it.rank }
+        val monsters = cards.filter { it.suit == "♣" || it.suit == "♠" }
+        if (monsters.isEmpty()) return false
 
-        val healingAvailable = cards.filter { it.suit == Constants.HEARTHS }
-            .sumOf { it.rank }
+        val totalDamage = monsters.sumOf { monster ->
+            val canUseWeapon = weapon > 0 && monster.rank < durability
+            if (canUseWeapon) maxOf(0, monster.rank - weapon)
+            else monster.rank
+        }
 
-        val hasWeapon = cards.any { it.suit == Constants.DIAMONDS }
+        return totalDamage > this.hp * 0.6
+    }
 
-        return (monsterTotal - healingAvailable > 10) && !hasWeapon
+    override fun chooseCard(cards: MutableList<Card>, remainingCards: Int): Int {
+        if (cards.size == 4 || (remainingCards == 0 && cards.size == 2)) {
+            plannedCards.clear()
+
+            val available = cards.toMutableList()
+            val skip = remainingCards != 0  // cannot pick first card
+            val indices = if (skip) (1 until available.size).toMutableList()
+            else (0 until available.size).toMutableList()
+
+            val order = decideOrder(available, indices)
+            plannedCards.addAll(order)
+        }
+
+        val nextCard = plannedCards.removeFirst()
+        return cards.indexOf(nextCard) + 1
+    }
+
+    private fun decideOrder(cards: MutableList<Card>, indices: MutableList<Int>): List<Card> {
+        val remaining = indices.toMutableList()
+        val order = mutableListOf<Card>()
+
+        // 1. Best weapon if better than current
+        val bestWeaponIdx = remaining
+            .filter { cards[it].suit == "♦" && cards[it].rank > this.weapon }
+            .maxByOrNull { cards[it].rank }
+        if (bestWeaponIdx != null) {
+            order.add(cards[bestWeaponIdx])
+            remaining.remove(bestWeaponIdx)
+        }
+
+        val weaponAfterPickup = if (bestWeaponIdx != null) cards[bestWeaponIdx].rank else this.weapon
+        val durabilityAfterPickup = if (bestWeaponIdx != null) 15 else this.durability
+
+        // 2. Monsters with weapon, strongest first
+        val monstersWithWeapon = remaining
+            .filter {
+                val c = cards[it]
+                (c.suit == "♣" || c.suit == "♠") &&
+                        weaponAfterPickup > 0 &&
+                        c.rank < durabilityAfterPickup
+            }
+            .sortedByDescending { cards[it].rank }
+
+        monstersWithWeapon.forEach { order.add(cards[it]) }
+        remaining.removeAll(monstersWithWeapon.toSet())
+
+        // 3. Potion if not drunk and HP not full
+        if (!this.drunk && this.hp < 20) {
+            val potionIdx = remaining
+                .filter { cards[it].suit == "♥" }
+                .maxByOrNull { cards[it].rank }
+            if (potionIdx != null) {
+                order.add(cards[potionIdx])
+                remaining.remove(potionIdx)
+            }
+        }
+
+        // 4. Remaining monsters weakest first
+        val bareMonsters = remaining
+            .filter { cards[it].suit == "♣" || cards[it].suit == "♠" }
+            .sortedBy { cards[it].rank }
+
+        bareMonsters.forEach { order.add(cards[it]) }
+        remaining.removeAll(bareMonsters.toSet())
+
+        // 5. Whatever's left
+        remaining.forEach { order.add(cards[it]) }
+
+        return order
     }
 }

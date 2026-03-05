@@ -3,7 +3,7 @@ package agents
 import models.Card
 
 class MockAgent(): Agent() {
-    override fun chooseCard(cards: MutableList<Card>): Int {
+    override fun chooseCard(cards: MutableList<Card>, remainingCards: Int): Int {
         return 0
     }
 

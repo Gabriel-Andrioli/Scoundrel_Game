@@ -17,7 +17,7 @@ object RandObj {
     }
 
     fun nextInt(until: Int) = rng.nextInt(until)
-    fun nextSeed() = nextInt(100000).toLong()
+    fun nextSeed() = nextInt(10000000).toLong()
     fun nextDouble() = rng.nextDouble()
     fun nextBoolean() = rng.nextBoolean()
 }

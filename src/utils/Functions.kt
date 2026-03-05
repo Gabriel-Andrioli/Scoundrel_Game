@@ -3,6 +3,7 @@ package utils
 import agents.Agent
 import models.Card
 import kotlin.math.max
+import utils.Constants
 
 class Functions {
     companion object {
@@ -21,12 +22,11 @@ class Functions {
 
             for (card in cards) {
                 when (card.suit) {
-                    "♣", "♠" -> {
+                    Constants.CLUBS, Constants.SPADES -> {
                         totalEnemies += card.rank
                         maxEnemy = max(card.rank, maxEnemy)
                     }
-                    "♥" -> totalHealth += card.rank
-
+                    Constants.HEARTS -> totalHealth += card.rank
                     else -> maxWeapon = max(card.rank, maxWeapon)
                 }
             }
@@ -39,5 +39,4 @@ class Functions {
             )
         }
     }
-
 }

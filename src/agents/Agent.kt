@@ -9,7 +9,7 @@ abstract class Agent {
     var weapon: Int = 0
     var durability: Int = 0
 
-    abstract fun chooseCard(cards: MutableList<Card>): Int
+    abstract fun chooseCard(cards: MutableList<Card>, remainingCards: Int): Int
     abstract fun chooseSkip(cards: MutableList<Card>): Boolean
 
     open fun interact(cards: MutableList<Card>, choice: Int): MutableList<Card>{
